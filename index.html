@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap" rel="stylesheet">
+    <title>STYLE COMBAT FEED</title>
+    <style>
+        /* ==========================================
+           1. VARIÁVEIS E BASE (ESTILO DEMONÍACO)
+           ========================================== */
+        :root {
+            --bg-color: #08080c;
+            --accent-color: #ff003c;
+            --text-color: #ffffff;
+            --rank-color: #555555;
+            --glow: 0 0 10px rgba(255, 0, 60, 0.5);
+            --font-family: 'Impact', 'Arial Black', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        /* Mudanças de tema baseadas no Rank que o JS vai injetar */
+        body.rank-d { --accent-color: #555555; --bg-color: #0f1115; }
+        body.rank-c { --accent-color: #3a86ff; --bg-color: #0b0f19; }
+        body.rank-b { --accent-color: #ffbe0b; --bg-color: #14120a; }
+        body.rank-a { --accent-color: #fb5607; --bg-color: #1c100b; }
+        body.rank-s { --accent-color: #ff006e; --bg-color: #1a0510; --glow: 0 0 20px #ff006e; }
+        body.rank-ss { --accent-color: #ff003c; --bg-color: #220008; --glow: 0 0 30px #ff003c; }
+        body.rank-sss {
+            --accent-color: #ffffff;
+            --bg-color: #000000;
+            --glow: 0 0 40px #ffffff, 0 0 70px #ff003c;
+            animation: screen-shake 0.1s infinite;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+            transition: background-color 0.5s ease, color 0.3s;
+        }
+
+        /* ==========================================
+           2. INTERFACE FIXA: O RANK TE JULGANDO
+           ========================================== */
+        #style-evaluator {
+            position: fixed;
+            top: 20px;
+            right: 40px;
+            z-index: 1000;
+            text-align: right;
+            pointer-events: none;
+        }
+
+        #rank-letter {
+            font-family: var(--font-family);
+            font-size: 8rem;
+            line-height: 0.8;
+            font-style: italic;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            text-shadow: var(--glow);
+            transition: all 0.1s ease-in-out;
+            transform: scale(1);
+        }
+
+        .rank-bump {
+            animation: bump 0.15s ease-out;
+        }
+
+        #rank-status {
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        /* Barra de progresso do estilo */
+        .style-bar-container {
+            width: 200px;
+            height: 6px;
+            background: #222;
+            margin-top: 10px;
+            border: 1px solid var(--accent-color);
+            overflow: hidden;
+        }
+
+        #style-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-color);
+            box-shadow: var(--glow);
+            transition: width 0.1s linear;
+        }
+
+        /* Mensagem de insulto/respeito */
+        #devil-comment {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            font-family: var(--font-family);
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            opacity: 0.8;
+            max-width: 400px;
+        }
+
+        /* ==========================================
+           3. CONTEÚDO (COMBAT CARDS)
+           ========================================== */
+        .wrapper {
+            max-width: 800px;
+            margin: 80px auto;
+            padding: 20px;
+        }
+
+        header {
+            margin-bottom: 60px;
+        }
+
+        header h1 {
+            font-family: var(--font-family);
+            font-size: 3rem;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            color: var(--text-color);
+        }
+
+        header p {
+            color: #888;
+            margin-top: 10px;
+        }
+
+        /* Área Secreta Bloqueada */
+        #secret-menu {
+            background: rgba(255, 0, 60, 0.05);
+            border: 2px dashed var(--accent-color);
+            padding: 30px;
+            border-radius: 4px;
+            margin-bottom: 40px;
+            text-align: center;
+            transition: all 0.5s;
+        }
+
+        #secret-menu.locked {
+            filter: blur(5px);
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        /* Feed de Combate (Cards) */
+        .combat-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .combat-card {
+            background: #12141c;
+            border-left: 4px solid var(--accent-color);
+            padding: 30px;
+            border-radius: 0 8px 8px 0;
+            cursor: crosshair;
+            transition: transform 0.2s, background-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .combat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, rgba(255,0,60,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.3s;
+        }
+
+        /* Hover inicia combo */
+        .combat-card:hover {
+            transform: translateX(10px) scale(1.02);
+            background: #181b26;
+        }
+
+        .combat-card:hover::before {
+            transform: translateX(0);
+        }
+
+        .combat-card h3 {
+            font-family: var(--font-family);
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .combat-card p {
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        /* ==========================================
+           4. ANIMAÇÕES (EFEITOS VISUAIS)
+           ========================================== */
+        @keyframes bump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3) rotate(-5deg); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes screen-shake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            21% { transform: translate(-1px, 1px) rotate(-0.5deg); }
+            41% { transform: translate(-1px, -1px) rotate(0.5deg); }
+            61% { transform: translate(1px, 1px) rotate(0deg); }
+            81% { transform: translate(1px, -1px) rotate(0.5deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        /* Esconder scrollbar para parecer mais com um jogo */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="rank-d">
+
+    <div id="style-evaluator">
+        <div id="rank-letter">D</div>
+        <div id="rank-status">Dismal</div>
+        <div class="style-bar-container">
+            <div id="style-bar"></div>
+        </div>
+    </div>
+
+    <div id="devil-comment">Você chama isso de estilo? Mexa-se!</div>
+
+    <div class="wrapper">
+        <header>
+            <h1 style="font-family: 'Metal Mania', cursive; margin-bottom: 7px;">Devil May Cry : Style Feed</h1>
+            <p>[Instruções]: Desça a página rápido, passe o mouse freneticamente nos cards e clique em sequência para pontuar. Fique parado e veja seu rank derreter.</p>
+        </header>
+
+        <section id="secret-menu" class="locked">
+            <h2 style="font-family: var(--font-family); margin-bottom: 10px;">🔒 COFRE DE SANGUE</h2>
+            <p id="secret-text">Apenas demônios de Rank S ou superior podem ler esta memória.</p>
+        </section>
+
+        <main class="combat-feed">
+            <div class="combat-card">
+                <h3>01. Rebellion Strike</h3>
+                <p>Corte frontal rápido. Interaja com este card repetidamente para iniciar o combo de comandos no banco de dados.</p>
+            </div>
+
+            <div class="combat-card">
+                <h3>02. Yamato Slash</h3>
+                <p>Um corte dimensional que separa a realidade. O movimento rápido do seu cursor gera pontos de estilo passivos.</p>
+            </div>
+
+            <div class="combat-card">
+                <h3>03. Ebony & Ivory Burst</h3>
+                <p>Disparos alternados de alta cadência. Mantenha o ritmo de cliques nos elementos para não deixar a barra esvaziar.</p>
+            </div>
+           
+            <div class="combat-card">
+                <h3>04. Devil Trigger</h3>
+                <p>Liberte a sua forma real. Se chegar ao rank SSS, a interface entrará em colapso e o layout começará a tremer devido à pressão do poder.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let stylePoints = 0;
+        const maxPoints = 700;
+       
+        const ranks = [
+            { min: 0,   letter: 'D', status: 'Dismal', class: 'rank-d', insult: 'Você chama isso de estilo? Mexa-se!' },
+            { min: 100, letter: 'C', status: 'Crazy', class: 'rank-c', insult: 'Ok... está esquentando.' },
+            { min: 200, letter: 'B', status: 'Badass', class: 'rank-b', insult: 'Nada mal, continue golpeando!' },
+            { min: 300, letter: 'A', status: 'Apocalyptic', class: 'rank-a', insult: 'Isso é devastador! Mais!' },
+            { min: 400, letter: 'S', status: 'Savage', class: 'rank-s', insult: 'PERFEITO! VOCÊ É UM MONSTRO!' },
+            { min: 550, letter: 'SS', status: 'Sick Skills', class: 'rank-ss', insult: 'ESTILO DIVINO CORRENDO NAS VEIAS!' },
+            { min: 650, letter: 'SSS', status: 'Smokin\' Sexy Style!!', class: 'rank-sss', insult: 'DEUS DO COMBATE!!! ABSURDO!' }
+        ];
+
+        const rankLetterEl = document.getElementById('rank-letter');
+        const rankStatusEl = document.getElementById('rank-status');
+        const styleBarEl = document.getElementById('style-bar');
+        const devilCommentEl = document.getElementById('devil-comment');
+        const secretMenuEl = document.getElementById('secret-menu');
+        const secretTextEl = document.getElementById('secret-text');
+        const bodyEl = document.body;
+
+        // Função para injetar pontos de estilo
+        function gainStyle(points) {
+            stylePoints = Math.min(stylePoints + points, maxPoints);
+            updateUI();
+            triggerBumpEffect();
+        }
+
+        // Animação visual no Rank ao pontuar
+        function triggerBumpEffect() {
+            rankLetterEl.classList.remove('rank-bump');
+            void rankLetterEl.offsetWidth; // Truque para resetar animação CSS
+            rankLetterEl.classList.add('rank-bump');
+        }
+
+        // Atualiza todo o site com base nos pontos atuais
+        function updateUI() {
+            // Descobre em qual rank o jogador está
+            let currentRank = ranks[0];
+            for (let i = ranks.length - 1; i >= 0; i--) {
+                if (stylePoints >= ranks[i].min) {
+                    currentRank = ranks[i];
+                    break;
+                }
+            }
+
+            // Atualiza Textos e Classes do Body
+            if (rankLetterEl.innerText !== currentRank.letter) {
+                rankLetterEl.innerText = currentRank.letter;
+                rankStatusEl.innerText = currentRank.status;
+                devilCommentEl.innerText = currentRank.insult;
+               
+                // Atualiza classe do body para mudar as cores CSS puras
+                ranks.forEach(r => bodyEl.classList.remove(r.class));
+                bodyEl.classList.add(currentRank.class);
+            }
+
+            // Atualiza tamanho da barra baseado no progresso até o próximo nível
+            let percentage = (stylePoints / maxPoints) * 100;
+            styleBarEl.style.width = `${percentage}%`;
+
+            // DEVOLVER RESPEITO (Mecânica de desbloqueio de Menu Secreto)
+            if (stylePoints >= 400) { // Rank S
+                secretMenuEl.classList.remove('locked');
+                secretTextEl.innerHTML = "🔓 <strong>REVELADO:</strong> Dante e Vergil são irmãos gêmeos amaldiçoados pelo sangue de Sparda.";
+            } else {
+                secretMenuEl.classList.add('locked');
+                secretTextEl.innerText = "Apenas demônios de Rank S ou superior podem ler esta memória.";
+            }
+        }
+
+        // --- GATILHOS DE AÇÃO REAL DO USUÁRIO ---
+
+        // 1. Cliques em sequência nos Cards geram combos altos
+        document.querySelectorAll('.combat-card').forEach(card => {
+            card.addEventListener('click', () => gainStyle(35));
+            // 2. Hover nos cards inicia micro-combos
+            card.addEventListener('mouseenter', () => gainStyle(10));
+        });
+
+        // 3. Scroll rápido aumenta agressividade
+        let lastScrollTop = 0;
+        window.addEventListener('scroll', () => {
+            gainStyle(8);
+        });
+
+        // 4. Decaimento natural (Ficar parado faz o rank cair lentamente)
+        setInterval(() => {
+            if (stylePoints > 0) {
+                stylePoints = Math.max(stylePoints - 4, 0);
+                updateUI();
+            }
+        }, 100); // Executa a cada 100ms
+    </script>
+</body>
+</html>
